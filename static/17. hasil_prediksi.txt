@@ -1,0 +1,7 @@
+Input Data:
+   Thinking   Striving   Relating  Influencing
+0     61.25  58.888889  62.222222        58.75
+Data Setelah Normalisasi:
+[[0.27906977 0.14289454 0.263198   0.08823528]]
+Hasil Prediksi (Class): 2
+Hasil Prediksi (Category): Psikomotorik

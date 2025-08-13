@@ -1,0 +1,246 @@
+{% extends "layout.html" %}
+{% block title %}Dataset dan Model{% endblock %}
+{% block content %}
+
+<div class="w-4/5 mx-auto p-6 bg-white shadow rounded-lg mt-10">
+  <h2 class="text-2xl font-semibold mb-2 text-gray-800">Dataset: {{ dataset_name }}</h2>
+  <p class="text-gray-600 mb-1">Total rows: {{ dataset.shape[0] }}</p>
+  <p class="text-gray-600 mb-6">Total columns: {{ dataset.shape[1] }}</p>
+
+  <div class="overflow-auto rounded-lg border border-purple-200">
+    <table class="min-w-full divide-y divide-purple-200 table-auto text-sm text-gray-700 striped table-striped">
+      <thead class="bg-purple-100 text-gray-800">
+        <tr>
+          <th class="px-4 py-2 font-semibold text-center">No.</th>
+          {% for column in dataset.columns %}
+          <th class="px-4 py-2 font-semibold text-center">{{ column }}</th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100">
+        {% for i in range(10) %}
+        <tr>
+          <td class="px-4 py-2 font-medium text-gray-700 text-center">{{ i+1 }}</td>
+          {% for column in dataset.columns %}
+          <td class="px-4 py-2 text-center">{{ dataset[column].iloc[i] }}</td>
+          {% endfor %}
+        </tr>
+        {% endfor %}
+
+        <tr><td class="px-4 py-2" colspan="{{ dataset.shape[1] + 1 }}"></td></tr>
+
+        {% for i in range(dataset.shape[0] - 10, dataset.shape[0]) %}
+        <tr>
+          <td class="px-4 py-2 font-medium text-gray-700 text-center">{{ i+1 }}</td>
+          {% for column in dataset.columns %}
+          <td class="px-4 py-2 text-center">{{ dataset[column].iloc[i] }}</td>
+          {% endfor %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="w-4/5 mx-auto p-6 bg-white shadow rounded-lg mt-10">
+  <h1 class="text-3xl font-semibold mb-2 text-gray-800 text-center">Pembuatan Model</h1>
+
+  <form action="/model/train" method="POST" class="mt-6">
+    <div class="flex justify-center">
+      <button type="submit"
+        class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors duration-200">
+        Train Model
+      </button>
+    </div>
+  </form>
+
+
+<div class="w-4/5 mx-auto p-6 bg-white shadow rounded-lg mt-10">
+  <h1 class="text-3xl font-semibold mb-2 text-gray-800 text-center">Hasil Clustering dengan Fuzzy C-Means</h1>
+
+  {% if silhouette_score is not none %}
+    <div class="flex justify-between mt-8">
+      <div class="flex-1 mr-4">
+        <h3 class="text-xl font-semibold text-purple-600 text-center">Nilai Silhouette Score:</h3>
+        <p class="mt-2 text-lg font-medium text-green-700 text-center">{{ "%.4f"|format(silhouette_score) }}</p>
+        <div class="flex justify-center mt-2">
+          <img src="{{ url_for('static', filename='silhouette.png') }}" width="500">
+        </div>
+        <p class="mt-2 text-center">
+          <a href="{{ url_for('static', filename='silhouette.xlsx') }}" class="text-blue-500 underline" download>
+            Download Silhouette Score (Excel)
+          </a>
+        </p>
+      </div>
+
+      {% if clustering_exist %}
+      <div class="flex-1 ml-4">
+        <h3 class="text-xl font-semibold text-purple-600 text-center">Visualisasi Clustering:</h3>
+        <img class="mx-auto mt-2" src="{{ url_for('static', filename='clustering.png') }}" width="500">
+      </div>
+      {% endif %}
+    </div>
+  {% endif %}
+
+  {% if centroid_df is not none and not centroid_df.empty %}
+    <h3 class="mt-8 text-xl font-semibold text-purple-600 text-center">Centroid per Cluster:</h3>
+    <div class="overflow-x-auto mt-4">
+      <table class="min-w-full table-auto rounded-lg border border-gray-300">
+        <thead class="bg-purple-100 text-gray-800">
+          <tr>
+            <th class="px-4 py-2 font-semibold text-center">Cluster</th>
+            {% for col in centroid_df.columns %}
+              <th class="px-4 py-2 font-semibold text-center">{{ col }}</th>
+            {% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for i, row in centroid_df.iterrows() %}
+            <tr class="hover:bg-purple-50">
+              <td class="px-4 py-2 text-center font-medium">{{ i }}</td>
+              {% for col in centroid_df.columns %}
+                <td class="px-4 py-2 text-center">{{ "%.5f"|format(row[col]) }}</td>
+              {% endfor %}
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <p class="mt-2 text-center">
+      <a href="{{ url_for('static', filename='centroids.xlsx') }}" class="text-blue-500 underline" download>
+        Download Centroids & Membership (Excel)
+      </a>
+    </p>
+  {% endif %}
+
+  {% if membership_df is not none and not membership_df.empty %}
+    <h3 class="mt-8 text-xl font-semibold text-purple-600 text-center">Membership Probabilities (5 Data Pertama):</h3>
+    <div class="overflow-x-auto mt-4">
+      <table class="min-w-full table-auto rounded-lg border border-gray-300">
+        <!-- <thead class="bg-purple-100 text-gray-800">
+          <tr>
+            <th class="px-4 py-2 font-semibold text-center">Data Index</th>
+            {% for col in membership_df.columns %}
+              <th class="px-4 py-2 font-semibold text-center">{{ col }}</th>
+            {% endfor %}
+          </tr>
+        </thead> -->
+        <thead class="bg-purple-100 text-gray-800">
+          <tr>
+            <th class="px-4 py-2 font-semibold text-center">Data Index</th>
+            {% for col in membership_df.columns %}
+              {% if loop.index == 5 %}
+                <th class="px-4 py-2 font-semibold text-center">{{ col }} (Afektif)</th>
+              {% elif loop.index == 6 %}
+                <th class="px-4 py-2 font-semibold text-center">{{ col }} (Psikomotorik)</th>
+              {% elif loop.index == 7 %}
+                <th class="px-4 py-2 font-semibold text-center">{{ col }} (Kognitif)</th>
+              {% else %}
+                <th class="px-4 py-2 font-semibold text-center">{{ col }}</th>
+              {% endif %}
+            {% endfor %}
+          </tr>
+        </thead>
+
+        <tbody>
+          {% for i, row in membership_df.head(5).iterrows() %}
+            <tr class="hover:bg-purple-50">
+              <td class="px-4 py-2 text-center">{{ i }}</td>
+                {% for col in membership_df.columns %}
+                  <td class="px-4 py-2 text-center">
+                    {% if loop.index0 < 4 %}
+                      {{ "%.2f"|format(row[col]) }}
+                    {% else %}
+                      {{ "%.4f"|format(row[col]) }}
+                    {% endif %}
+                  </td>
+                {% endfor %}
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% endif %}
+</div>
+
+<div class="w-4/5 mx-auto p-6 bg-white shadow rounded-lg mt-10">
+  <h1 class="text-3xl font-semibold mb-2 text-gray-800 text-center">Hasil Klasifikasi dengan ANFIS</h1>
+
+
+
+  {% if checkModel %}
+  <div class="flex justify-between mt-8">
+      <div class="flex-1 ml-4">
+          <h3 class="text-xl font-semibold text-purple-600 text-center">Visualisasi Confusion Matrix:</h3>
+          <img class="mx-auto mt-2" src="{{ url_for('static', filename='12. confusion_matrix_heatmap_RETRAIN.png') }}" width="500">
+      </div>
+      <div class="flex-1 ml-4">
+          <h3 class="text-xl font-semibold text-purple-600 text-center">Confusion Matrix:</h3>
+          <img class="mx-auto mt-2" src="{{ url_for('static', filename='13. classification_report_RETRAIN.png') }}" width="500">
+      </div>
+
+  </div>
+  <div class="w-4/5 mx-auto p-6 bg-white shadow rounded-lg mt-10">
+    <h2 class="text-2xl font-semibold mb-2 text-gray-800">Dataset: {{ classified_train_df_name }}</h2>
+    <p class="text-gray-600 mb-1">Total rows: {{ classified_train_df.shape[0] }}</p>
+    <p class="text-gray-600 mb-6">Total columns: {{ classified_train_df.shape[1] }}</p>
+  
+    <div class="overflow-auto rounded-lg border border-purple-200">
+      <table class="min-w-full divide-y divide-purple-200 table-auto text-sm text-gray-700 striped table-striped">
+        <thead class="bg-purple-100 text-gray-800">
+          <tr>
+            <th class="px-4 py-2 font-semibold text-center">No.</th>
+            {% for column in classified_train_df.columns %}
+            <th class="px-4 py-2 font-semibold text-center">{{ column }}</th>
+            {% endfor %}
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100">
+          {% for i in range(10) %}
+          <tr>
+            <td class="px-4 py-2 font-medium text-gray-700 text-center">{{ i+1 }}</td>
+            {% for column in classified_train_df.columns %}
+            <td class="px-4 py-2 text-center">
+              {% if classified_train_df[column].iloc[i] is number %}
+                {{ '{:.4f}'.format(classified_train_df[column].iloc[i]) }}
+              {% else %}
+                {{ classified_train_df[column].iloc[i] }}
+              {% endif %}
+            </td>
+            {% endfor %}
+          </tr>
+          {% endfor %}
+  
+          <tr><td class="px-4 py-2" colspan="{{ classified_train_df.shape[1] + 1 }}"></td></tr>
+  
+          {% for i in range(classified_train_df.shape[0] - 10, classified_train_df.shape[0]) %}
+          <tr>
+            <td class="px-4 py-2 font-medium text-gray-700 text-center">{{ i+1 }}</td>
+            {% for column in classified_train_df.columns %}
+            <td class="px-4 py-2 text-center">
+              {% if classified_train_df[column].iloc[i] is number %}
+                {{ '{:.4f}'.format(classified_train_df[column].iloc[i]) }}
+              {% else %}
+                {{ classified_train_df[column].iloc[i] }}
+              {% endif %}
+            </td>
+            {% endfor %}
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <p class="mt-2 text-center">
+      <a href="{{ url_for('static', filename='15. classified_train_df_RETRAIN.xlsx') }}" class="text-blue-500 underline" download>
+        Download Data Uji (Excel)
+      </a>
+    </p>
+
+  </div>
+
+
+  {% endif %}
+</div>
+
+{% endblock %}

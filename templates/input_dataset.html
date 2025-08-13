@@ -1,0 +1,10 @@
+{% extends "layout.html" %}
+{% block title %}Input Dataset{% endblock %}
+{% block content %}
+<h2>Input Dataset</h2>
+<form action="/dataset/input" method="POST" enctype="multipart/form-data">
+    <label for="file">Upload your dataset (CSV or Excel):</label>
+    <input type="file" id="file" name="file" accept=".csv,.xlsx" required>
+    <button type="submit">Upload</button>
+</form>
+{% endblock %}

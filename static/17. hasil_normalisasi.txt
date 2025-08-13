@@ -1,0 +1,2 @@
+Data Setelah Normalisasi:
+[[63.75       56.67       56.67000676 63.7499924 ]]

@@ -1,0 +1,5 @@
+Input Data:
+Thinking: 49
+Striving: 53
+Relating: 56
+Influencing: 47

@@ -1,0 +1,750 @@
+{% extends "layout.html" %}
+{% block title %}Klasifikasi Bakat{% endblock %}
+{% block content %}
+<div class="hidden sm:mb-8 sm:flex sm:justify-center">
+    <h1 class="text-5xl font-semibold pb-20 tracking-tight text-center text-balance text-gray-900 sm:text-7xl">Aplikasi Klasifikasi Bakat Siswa</h1>
+    <p class="mt-8 text-lg font-medium text-pretty text-center text-gray-500 sm:text-xl/8"></p> 
+</div>
+<div class="mx-auto py-5 sm:py-5 lg:py-5">
+  <div class="w-[80%] mx-auto bg-white p-6 rounded-lg shadow">
+    <h1 class="text-2xl font-bold mb-6 text-center">Masukan Data Hasil Kuisioner Siswa</h1>
+    <form action="{{ url_for('prediction.get_data') }}" method="POST" id="sliderForm">
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-x-8 gap-y-6 mb-6">
+        <div>
+          <label for="nama" class="block text-sm/6 font-semibold text-gray-900">Nama Siswa</label>
+          <div class="mt-2.5">
+            <input type="text" name="nama" id="nama" placeholder="Masukan Nama Siswa" class="block w-full rounded-md bg-white px-3.5 py-2 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600">
+          </div>
+        </div>
+        <div>
+          <label for="kelas" class="block text-sm/6 font-semibold text-gray-900">Kelas</label>
+          <div class="mt-2.5">
+            <input type="text" name="kelas" id="kelas" placeholder="Masukan Kelas"  class="block w-full rounded-md bg-white px-3.5 py-2 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600">
+          </div>
+        </div>
+        <div>
+          <label for="asalSekolah" class="block text-sm/6 font-semibold text-gray-900">Asal Sekolah</label>
+          <div class="mt-2.5">
+            <input type="text" name="asalSekolah" id="asalSekolah" placeholder="Masukan Asal Sekolah"  class="block w-full rounded-md bg-white px-3.5 py-2 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600">
+          </div>
+        </div>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-5">
+
+        <!-- Slider Inputs -->
+        <!-- Thinking Column -->
+        <div>
+          <h3 class="text-center font-medium mb-2">Thinking</h3>
+          <div id="thinkingSliders"></div>
+        </div>
+
+        <!-- Striving Column -->
+        <div>
+          <h3 class="text-center font-medium mb-2">Striving</h3>
+          <div id="strivingSliders"></div>
+        </div>
+
+        <!-- Relating Column -->
+        <div>
+          <h3 class="text-center font-medium mb-2">Relating</h3>
+          <div id="relatingSliders"></div>
+        </div>
+
+        <!-- Influencing Column -->
+        <div>
+          <h3 class="text-center font-medium mb-2">Influencing</h3>
+          <div id="influencingSliders"></div>
+        </div>
+      </div>
+      <div class="text-center mt-6">
+        <button type="submit" class="px-6 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition">Simpan & Olah Data</button>
+      </div>
+    </form>
+
+    <div id="result" class="mt-8 hidden">
+      <h2 class="text-xl font-semibold mb-4 text-center">Hasil Persentase</h2>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+        <div><span class="font-medium">Thinking:</span> <span id="thinking"></span>%</div>
+        <div><span class="font-medium">Striving:</span> <span id="striving"></span>%</div>
+        <div><span class="font-medium">Relating:</span> <span id="relating"></span>%</div>
+        <div><span class="font-medium">Influencing:</span> <span id="influencing"></span>%</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="w-4/5 mx-auto p-6 bg-white shadow rounded-lg mt-10">
+
+  {% if error_message %}
+    <div class="text-center text-red-500">
+      <p>{{ error_message }}</p>
+    </div>
+  {% else %}
+    <!-- Formulir untuk prediksi -->
+    <form action="{{ url_for('prediction.classify_data') }}" method="POST" id="predictionForm">
+
+      <!-- Button to classify data -->
+      <div class="text-center mb-6">
+        <button type="submit" class="px-6 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition">Prediksi</button>
+      </div>
+    </form>
+    {% if prediksi %}
+    <div id="contentToPrint">
+      <div class="pt-10">
+        <h1 class="text-3xl font-semibold mb-2 text-gray-800 text-center">Hasil Prediksi</h1>
+        <h1 class="text-4xl text-blue-800 text-center"><strong>{{ hasil_prediksi.predicted_category if hasil_prediksi.predicted_category is not none else "N/A" }}</strong></h1>
+
+        <!-- Visualisasi Prediksi -->
+        <div class="text-center mt-6 h-full pl-7 pt-8">
+          <h3 class="text-xl font-semibold text-purple-600">Probabilitas Kemampuan Belajar:</h3>
+          <img class="mx-auto mt-2" src="{{ url_for('static', filename='22. hasil_prediksi.png') }}">
+        </div>
+      </div>
+
+      {% if hasil_prediksi.predicted_category == "Kognitif" %}
+        <!-- <div class="overflow-hidden bg-white py-24 sm:py-32"> -->
+        <div class="overflow-hidden bg-white pt-2"></div>
+          <div class="mx-auto max-w-7xl px-6 lg:px-8">
+            <div class="mx-auto grid max-w-2xl grid-cols-1 gap-x-8 gap-y-16 sm:gap-y-20 lg:mx-0 lg:max-w-none lg:grid-cols-2">
+
+              <!-- Kolom kiri (teks) -->
+              <div class="lg:pt-4 lg:pr-8">
+                <div class="lg:max-w-lg">
+                  <div class="grid grid-cols-1 sm:grid-cols-3 gap-x-8 gap-y-6 mb-6" style="color: #de3b93;">
+                    <!-- keluarkan nama, kelas, dan asal sekolah -->
+                    <div class="col-span-2 grid grid-cols-[auto_min-content_1fr] gap-x-4 gap-y-2">
+                      <h3 class="text-xl font-semibold">Nama Siswa</h3>
+                      <h3 class="text-xl font-semibold">:</h3>
+                      <h3 class="text-xl font-semibold">{{ data_siswa.Nama }}</h3>
+                      <h3 class="text-xl font-semibold">Kelas</h3>
+                      <h3 class="text-xl font-semibold">:</h3>
+                      <h3 class="text-xl font-semibold">{{ data_siswa.Kelas }}</h3>
+                      <h3 class="text-xl font-semibold">Asal Sekolah</h3>
+                      <h3 class="text-xl font-semibold">:</h3>
+                      <h3 class="text-xl font-semibold">{{ data_siswa.asalSekolah }}</h3>
+                    </div>
+                  </div>
+                  
+                  <h2 class="text-base/7 font-semibold text-indigo-600">Hasil prediksi kemampuan siswa adalah : Kognitif</h2>
+
+                  <p class="mt-2 text-4xl font-semibold tracking-tight text-pretty text-gray-900 sm:text-5xl">SARAN UNTUK KOGNITIF</p>
+                  <p class="mt-6 text-lg/8 text-gray-600">Berikut adalah beberapa metode pengajaran, strategi belajar, dan latihan yang dapat digunakan untuk meningkatkan kemampuan kognitif siswa:</p>
+                  <dl class="mt-10 max-w-xl space-y-8 text-base/7 text-gray-600 lg:max-w-none">
+                    <div class="relative pl-9">
+                      <dt class="inline font-semibold text-gray-900">
+                        <svg class="absolute top-1 left-1 size-5 text-indigo-600" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" data-slot="icon">
+                          <path fill-rule="evenodd" d="M5.5 17a4.5 4.5 0 0 1-1.44-8.765 4.5 4.5 0 0 1 8.302-3.046 3.5 3.5 0 0 1 4.504 4.272A4 4 0 0 1 15 17H5.5Zm3.75-2.75a.75.75 0 0 0 1.5 0V9.66l1.95 2.1a.75.75 0 1 0 1.1-1.02l-3.25-3.5a.75.75 0 0 0-1.1 0l-3.25 3.5a.75.75 0 1 0 1.1 1.02l1.95-2.1v4.59Z" clip-rule="evenodd" />
+                        </svg>
+                        1. Metode Pengajaran:
+                      </dt>
+                      <dd class="inline">
+                        <ul class="list-disc">
+                          <li><span class="font-semibold text-indigo-600">Diskusi Kelas:</span> Mengajak siswa untuk berdiskusi tentang konsep atau masalah yang sedang dipelajari, mendorong mereka untuk berpikir kritis.</li>
+                          <li><span class="font-semibold text-indigo-600">Pembelajaran Berbasis Masalah (PBL):</span> Memberikan masalah nyata untuk diselesaikan siswa, mengasah keterampilan analitis dan pemecahan masalah.</li>
+                          <li><span class="font-semibold text-indigo-600">Presentasi dan Demonstrasi:</span> Menyampaikan materi dengan cara presentasi visual atau demonstrasi praktis yang memperjelas konsep-konsep kompleks.</li>
+                        </ul>
+                      </dd>
+                    </div>
+
+                    <div class="relative pl-9">
+                      <dt class="inline font-semibold text-gray-900">
+                        <svg class="absolute top-1 left-1 size-5 text-indigo-600" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" data-slot="icon">
+                          <path fill-rule="evenodd" d="M10 1a4.5 4.5 0 0 0-4.5 4.5V9H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2h-.5V5.5A4.5 4.5 0 0 0 10 1Zm3 8V5.5a3 3 0 1 0-6 0V9h6Z" clip-rule="evenodd" />
+                        </svg>
+                        2. Strategi Belajar:
+                      </dt>
+                      <dd class="inline">
+                        <ul class="list-disc">
+                          <li><span class="font-semibold text-indigo-600">Mind Mapping:</span> Membuat peta konsep untuk mengorganisir ide dan menghubungkan berbagai informasi.</li>
+                          <li><span class="font-semibold text-indigo-600">Pembelajaran Mandiri:</span> Siswa mencari informasi tambahan dan belajar secara individu untuk memperdalam pemahaman mereka.</li>
+                          <li><span class="font-semibold text-indigo-600">Latihan Soal:</span> Menggunakan soal latihan untuk menguji dan memperkuat pemahaman konsep yang telah dipelajari.</li>
+                        </ul>
+                      </dd>
+                    </div>
+
+                    <div class="relative pl-9">
+                      <dt class="inline font-semibold text-gray-900">
+                        <svg class="absolute top-1 left-1 size-5 text-indigo-600" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" data-slot="icon">
+                          <path d="M4.632 3.533A2 2 0 0 1 6.577 2h6.846a2 2 0 0 1 1.945 1.533l1.976 8.234A3.489 3.489 0 0 0 16 11.5H4c-.476 0-.93.095-1.344.267l1.976-8.234Z" />
+                          <path fill-rule="evenodd" d="M4 13a2 2 0 1 0 0 4h12a2 2 0 1 0 0-4H4Zm11.24 2a.75.75 0 0 1 .75-.75H16a.75.75 0 0 1 .75.75v.01a.75.75 0 0 1-.75.75h-.01a.75.75 0 0 1-.75-.75V15Zm-2.25-.75a.75.75 0 0 0-.75.75v.01c0 .414.336.75.75.75H13a.75.75 0 0 0 .75-.75V15a.75.75 0 0 0-.75-.75h-.01Z" clip-rule="evenodd" />
+                        </svg>
+                        3. Latihan:
+                      </dt>
+                      <dd class="inline">
+                        <ul class="list-disc">
+                          <li><span class="font-semibold text-indigo-600">Latihan Soal Tertulis:</span> Mengerjakan soal-soal latihan yang berfokus pada pemahaman konsep dan aplikasi.</li>
+                          <li><span class="font-semibold text-indigo-600">Simulasi dan Kasus Studi:</span> Siswa menerapkan teori yang dipelajari ke dalam simulasi atau analisis kasus nyata.</li>
+                          <li><span class="font-semibold text-indigo-600">Quiz Interaktif:</span> Mengikuti quiz atau tes interaktif yang memotivasi siswa untuk mengulang dan menguji pemahaman mereka.</li>
+                        </ul>
+                      </dd>
+                    </div>
+                  </dl>
+                </div>
+              </div>
+
+              <!-- Kolom kanan (gambar) -->
+              <div class="flex flex-col items-center space-y-8">
+                <img class="mx-auto mt-2" src="{{ url_for('static', filename='30. visualisasi_nilai_bakat.png') }}">
+                <div id="contentToPrint" class="flex flex-col items-center space-y-8">
+                  <img src="/static/images/kognitif 2.jpeg" class="w-full max-w-none rounded-xl shadow-xl ring-1 ring-gray-400/10 transition-transform duration-300 ease-in-out transform hover:scale-105 hide-on-print-pdf" width="608" height="361">
+                  <img src="/static/images/kognitif 3.jpeg" class="w-full max-w-none rounded-xl shadow-xl ring-1 ring-gray-400/10 transition-transform duration-300 ease-in-out transform hover:scale-105 hide-on-print-pdf" width="608" height="361">
+                </div>
+              </div>
+            </div>
+
+            <!-- KHUSUS PRINTOUT KOGNITIF -->
+            <div id="printOnlyContent-kognitif" class="hidden print:block print:w-full print:p-6 print:text-justify">
+              <div class="pt-3">
+                <h1 class="text-3xl font-semibold mb-2 text-gray-800 text-center">Hasil Prediksi</h1>
+                <h1 class="text-4xl text-blue-800 text-center"><strong>{{ hasil_prediksi.predicted_category if hasil_prediksi.predicted_category is not none else "N/A" }}</strong></h1>
+
+                <!-- Visualisasi Prediksi -->
+                <div class="text-center mt-6 h-full pl-7 pt-8">
+                  <h3 class="text-xl font-semibold text-purple-600">Probabilitas Kemampuan Belajar:</h3>
+                  <img class="mx-auto mt-2" src="{{ url_for('static', filename='22. hasil_prediksi.png') }}">
+                </div>
+              </div>
+
+              <div class="mx-auto max-w-7xl px-6 lg:px-8 flex items-start gap-x-8">
+                  <div class="lg:pt-4 lg:pr-8 w-1/2">
+                    <div class="lg:max-w-lg grid grid-cols-1 gap-y-2 pl-3 py-10" style="color: #de3b93;">
+                      <div class="flex whitespace-nowrap">
+                        <h1 class="font-semibold w-1/3">Nama Siswa</h1>
+                        <h1 class="font-semibold w-1/12 text-right">:&nbsp;</h1>
+                        <h1 class="font-semibold w-auto">{{ data_siswa.Nama }}</h1>
+                      </div>
+                      <div class="flex whitespace-nowrap">
+                        <h1 class="font-semibold w-1/3">Kelas</h1>
+                        <h1 class="font-semibold w-1/12 text-right">:&nbsp;</h1>
+                        <h1 class="font-semibold w-auto">{{ data_siswa.Kelas }}</h1>
+                      </div>
+                      <div class="flex whitespace-nowrap">
+                        <h1 class="font-semibold w-1/3">Asal Sekolah</h1>
+                        <h1 class="font-semibold w-1/12 text-right">:&nbsp;</h1>
+                        <h1 class="font-semibold w-auto">{{ data_siswa.asalSekolah }}</h1>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="flex flex-col items-center space-y-8 w-1/2">
+                      <img class="mx-auto mt-2 max-w-full h-auto" style="max-height: 400px;" src="{{ url_for('static', filename='30. visualisasi_nilai_bakat.png') }}">
+                  </div>
+              </div>
+
+              <div class="pl-12 pr-10">
+                  <p class="mt-2 text-2xl font-semibold tracking-tight text-pretty text-gray-900">SARAN UNTUK KOGNITIF</p>
+                  <p class="text-sm text-gray-600 text-justify pt-3">Berikut adalah beberapa metode pengajaran, strategi belajar, dan latihan yang dapat digunakan untuk meningkatkan kemampuan kognitif siswa:</p>
+                <div>
+                  <span class="font-semibold text-gray-900 text-sm">1. Metode Pengajaran:</span>
+                  <ul class="list-disc ml-6 text-sm">
+                    <li class="text-sm"><span class="font-semibold text-indigo-600">Diskusi Kelas:</span> <span class="text-justify">Mengajak siswa untuk berdiskusi tentang konsep atau masalah yang sedang dipelajari, mendorong mereka untuk berpikir kritis.</span></li>
+                    <li class="text-sm"><span class="font-semibold text-indigo-600">Pembelajaran Berbasis Masalah (PBL):</span> <span class="text-justify">Memberikan masalah nyata untuk diselesaikan siswa, mengasah keterampilan analitis dan pemecahan masalah.</span></li>
+                    <li class="text-sm"><span class="font-semibold text-indigo-600">Presentasi dan Demonstrasi:</span> <span class="text-justify">Menyampaikan materi dengan cara presentasi visual atau demonstrasi praktis yang memperjelas konsep-konsep kompleks.</span></li>
+                  </ul>
+                </div>
+                <div>
+                  <span class="font-semibold text-gray-900 text-sm">2. Strategi Belajar:</span>
+                  <ul class="list-disc ml-6 text-sm">
+                    <li class="text-sm"><span class="font-semibold text-indigo-600">Mind Mapping:</span> <span class="text-justify">Membuat peta konsep untuk mengorganisir ide dan menghubungkan berbagai informasi.</span></li>
+                    <li class="text-sm"><span class="font-semibold text-indigo-600">Pembelajaran Mandiri:</span> <span class="text-justify">Siswa mencari informasi tambahan dan belajar secara individu untuk memperdalam pemahaman mereka.</span></li>
+                    <li class="text-sm"><span class="font-semibold text-indigo-600">Latihan Soal:</span> <span class="text-justify">Menggunakan soal latihan untuk menguji dan memperkuat pemahaman konsep yang telah dipelajari.</span></li>
+                  </ul>
+                </div>
+                <div>
+                  <span class="font-semibold text-gray-900 text-sm">3. Latihan:</span>
+                  <ul class="list-disc ml-6 text-sm">
+                    <li class="text-sm"><span class="font-semibold text-indigo-600">Latihan Soal Tertulis:</span> <span class="text-justify">Mengerjakan soal-soal latihan yang berfokus pada pemahaman konsep dan aplikasi.</span></li>
+                    <li class="text-sm"><span class="font-semibold text-indigo-600">Simulasi dan Kasus Studi:</span> <span class="text-justify">Siswa menerapkan teori yang dipelajari ke dalam simulasi atau analisis kasus nyata.</span></li>
+                    <li class="text-sm"><span class="font-semibold text-indigo-600">Quiz Interaktif:</span> <span class="text-justify">Mengikuti quiz atau tes interaktif yang memotivasi siswa untuk mengulang dan menguji pemahaman mereka.</span></li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      {% elif hasil_prediksi.predicted_category == "Afektif" %}
+        <div class="overflow-hidden bg-white">
+          <div class="mx-auto max-w-7xl px-6 lg:px-8">
+            <div class="mx-auto grid max-w-2xl grid-cols-1 gap-x-8 gap-y-16 sm:gap-y-20 lg:mx-0 lg:max-w-none lg:grid-cols-2">
+              <!-- Kolom kiri (teks) -->
+              <div class="lg:pt-4 lg:pr-8">
+                <div class="lg:max-w-lg">
+                  <div class="grid grid-cols-1 sm:grid-cols-3 gap-x-8 gap-y-6 mb-6" style="color: #de3b93;">
+                    <!-- keluarkan nama, kelas, dan asal sekolah -->
+                    <div class="col-span-2 grid grid-cols-[auto_min-content_1fr] gap-x-4 gap-y-2">
+                      <h3 class="text-xl font-semibold">Nama Siswa</h3>
+                      <h3 class="text-xl font-semibold">:</h3>
+                      <h3 class="text-xl font-semibold">{{ data_siswa.Nama }}</h3>
+                      <h3 class="text-xl font-semibold">Kelas</h3>
+                      <h3 class="text-xl font-semibold">:</h3>
+                      <h3 class="text-xl font-semibold">{{ data_siswa.Kelas }}</h3>
+                      <h3 class="text-xl font-semibold">Asal Sekolah</h3>
+                      <h3 class="text-xl font-semibold">:</h3>
+                      <h3 class="text-xl font-semibold">{{ data_siswa.asalSekolah }}</h3>
+                    </div>
+                  </div>
+                  <h2 class="text-base/7 font-semibold text-indigo-600">Hasil prediksi kemampuan siswa adalah : Afektif</h2>
+                  <p class="mt-2 text-4xl font-semibold tracking-tight text-pretty text-gray-900 sm:text-5xl">SARAN UNTUK AFEKTIF</p>
+                  <p class="mt-6 text-lg/8 text-gray-600">Berikut adalah beberapa metode pengajaran, strategi belajar, dan latihan yang dapat digunakan untuk meningkatkan kemampuan afektif siswa:</p>
+                  <dl class="mt-10 max-w-xl space-y-8 text-base/7 text-gray-600 lg:max-w-none">
+                    <div class="relative pl-9">
+                      <dt class="inline font-semibold text-gray-900">
+                        <svg class="absolute top-1 left-1 size-5 text-indigo-600" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" data-slot="icon">
+                          <path fill-rule="evenodd" d="M5.5 17a4.5 4.5 0 0 1-1.44-8.765 4.5 4.5 0 0 1 8.302-3.046 3.5 3.5 0 0 1 4.504 4.272A4 4 0 0 1 15 17H5.5Zm3.75-2.75a.75.75 0 0 0 1.5 0V9.66l1.95 2.1a.75.75 0 1 0 1.1-1.02l-3.25-3.5a.75.75 0 0 0-1.1 0l-3.25 3.5a.75.75 0 1 0 1.1 1.02l1.95-2.1v4.59Z" clip-rule="evenodd" />
+                        </svg>
+                        1. Metode Pengajaran:
+                      </dt>
+                      <dd class="inline">
+                        <ul class="list-disc">
+                          <li><span class="font-semibold text-indigo-600">Refleksi Diri:</span> Memberikan waktu bagi siswa untuk merefleksikan pengalaman mereka dan menilai kemajuan pribadi.</li>
+                          <li><span class="font-semibold text-indigo-600">Kerja Kelompok:</span> Siswa bekerja dalam kelompok untuk mencapai tujuan bersama, yang memupuk kerjasama dan komunikasi.</li>
+                          <li><span class="font-semibold text-indigo-600">Berbagi Pengalaman:</span> Siswa berbagi cerita atau pengalaman pribadi yang berkaitan dengan topik pembelajaran.</li>
+                        </ul>
+                      </dd>
+                    </div>
+                    <div class="relative pl-9">
+                      <dt class="inline font-semibold text-gray-900">
+                        <svg class="absolute top-1 left-1 size-5 text-indigo-600" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" data-slot="icon">
+                          <path fill-rule="evenodd" d="M5.5 17a4.5 4.5 0 0 1-1.44-8.765 4.5 4.5 0 0 1 8.302-3.046 3.5 3.5 0 0 1 4.504 4.272A4 4 0 0 1 15 17H5.5Zm3.75-2.75a.75.75 0 0 0 1.5 0V9.66l1.95 2.1a.75.75 0 1 0 1.1-1.02l-3.25-3.5a.75.75 0 0 0-1.1 0l-3.25 3.5a.75.75 0 1 0 1.1 1.02l1.95-2.1v4.59Z" clip-rule="evenodd" />
+                        </svg>
+                        2. Strategi Belajar:
+                      </dt>
+                      <dd class="inline">
+                        <ul class="list-disc">
+                          <li><span class="font-semibold text-indigo-600">Pembelajaran Berbasis Pengalaman:</span> Mengajak siswa untuk belajar melalui pengalaman langsung atau kegiatan praktis.</li>
+                          <li><span class="font-semibold text-indigo-600">Ceramah dan Diskusi:</span> Menyediakan waktu untuk ceramah atau diskusi mengenai topik-topik emosional atau sosial yang berkaitan dengan pembelajaran.</li>
+                          <li><span class="font-semibold text-indigo-600">Motivasi dan Penghargaan:</span> Memberikan penghargaan atau penguatan positif untuk meningkatkan motivasi dan keterlibatan siswa.</li>
+                        </ul>
+                      </dd>
+                    </div>
+                    <div class="relative pl-9">
+                      <dt class="inline font-semibold text-gray-900">
+                        <svg class="absolute top-1 left-1 size-5 text-indigo-600" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" data-slot="icon">
+                          <path fill-rule="evenodd" d="M5.5 17a4.5 4.5 0 0 1-1.44-8.765 4.5 4.5 0 0 1 8.302-3.046 3.5 3.5 0 0 1 4.504 4.272A4 4 0 0 1 15 17H5.5Zm3.75-2.75a.75.75 0 0 0 1.5 0V9.66l1.95 2.1a.75.75 0 1 0 1.1-1.02l-3.25-3.5a.75.75 0 0 0-1.1 0l-3.25 3.5a.75.75 0 1 0 1.1 1.02l1.95-2.1v4.59Z" clip-rule="evenodd" />
+                        </svg>
+                        3. Latihan:
+                      </dt>
+                      <dd class="inline">
+                        <ul class="list-disc">
+                          <li><span class="font-semibold text-indigo-600">Diskusi Kelas:</span> Siswa membahas materi dalam kelompok atau kelas besar untuk menggali pemahaman dan keterlibatan emosional.</li>
+                          <li><span class="font-semibold text-indigo-600">Refleksi Mandiri:</span> Siswa menulis jurnal pribadi atau esai reflektif mengenai pengalaman belajar mereka.</li>
+                          <li><span class="font-semibold text-indigo-600">Proyek Sosial:</span> Menyusun proyek yang mengajak siswa untuk membantu komunitas atau memberikan dampak sosial yang positif.</li>
+                        </ul>
+                      </dd>
+                    </div>
+
+                  </dl>
+                </div>
+              </div>
+
+              <!-- Kolom kanan (gambar) -->
+              <div class="flex flex-col items-center space-y-8">
+                <img class="mx-auto mt-2" src="{{ url_for('static', filename='30. visualisasi_nilai_bakat.png') }}">
+                <img src="/static/images/afektif 2.jpeg" class="w-full max-w-none rounded-xl shadow-xl ring-1 ring-gray-400/10 transition-transform duration-300 ease-in-out transform hover:scale-105" width="608" height="361">
+                <img src="/static/images/afektif 3.jpeg" class="w-full max-w-none rounded-xl shadow-xl ring-1 ring-gray-400/10 transition-transform duration-300 ease-in-out transform hover:scale-105" width="608" height="361">
+              </div>
+            </div>
+          </div>
+
+            <!-- KHUSUS PRINTOUT AFEKTIF -->
+            <div id="printOnlyContent-afektif" class="hidden print:block print:w-full print:p-6 print:text-justify">
+              <div class="pt-3">
+                <h1 class="text-3xl font-semibold mb-2 text-gray-800 text-center">Hasil Prediksi</h1>
+                <h1 class="text-4xl text-blue-800 text-center"><strong>{{ hasil_prediksi.predicted_category if hasil_prediksi.predicted_category is not none else "N/A" }}</strong></h1>
+
+                <!-- Visualisasi Prediksi -->
+                <div class="text-center mt-6 h-full pl-7 pt-8">
+                  <h3 class="text-xl font-semibold text-purple-600">Probabilitas Kemampuan Belajar:</h3>
+                  <img class="mx-auto mt-2" src="{{ url_for('static', filename='22. hasil_prediksi.png') }}">
+                </div>
+              </div>
+
+              <div class="mx-auto max-w-7xl px-6 lg:px-8 flex items-start gap-x-8">
+                  <div class="lg:pt-4 lg:pr-8 w-1/2">
+                    <div class="lg:max-w-lg grid grid-cols-1 gap-y-2 pl-3 py-10" style="color: #de3b93;">
+                      <div class="flex whitespace-nowrap">
+                        <h1 class="font-semibold w-1/3">Nama Siswa</h1>
+                        <h1 class="font-semibold w-1/12 text-right">:&nbsp;</h1>
+                        <h1 class="font-semibold w-auto">{{ data_siswa.Nama }}</h1>
+                      </div>
+                      <div class="flex whitespace-nowrap">
+                        <h1 class="font-semibold w-1/3">Kelas</h1>
+                        <h1 class="font-semibold w-1/12 text-right">:&nbsp;</h1>
+                        <h1 class="font-semibold w-auto">{{ data_siswa.Kelas }}</h1>
+                      </div>
+                      <div class="flex whitespace-nowrap">
+                        <h1 class="font-semibold w-1/3">Asal Sekolah</h1>
+                        <h1 class="font-semibold w-1/12 text-right">:&nbsp;</h1>
+                        <h1 class="font-semibold w-auto">{{ data_siswa.asalSekolah }}</h1>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="flex flex-col items-center space-y-8 w-1/2">
+                      <img class="mx-auto mt-2 max-w-full h-auto" style="max-height: 400px;" src="{{ url_for('static', filename='30. visualisasi_nilai_bakat.png') }}">
+                  </div>
+              </div>
+
+              <div class="pl-12 pr-10">
+                  <p class="mt-2 text-2xl font-semibold tracking-tight text-pretty text-gray-900">SARAN UNTUK AFEKTIF</p>
+                  <p class="text-sm text-gray-600 text-justify pt-3">Berikut adalah beberapa metode pengajaran, strategi belajar, dan latihan yang dapat digunakan untuk meningkatkan kemampuan kognitif siswa:</p>
+                <div>
+                  <span class="font-semibold text-gray-900 text-sm">1. Metode Pengajaran:</span>
+                  <ul class="list-disc ml-6 text-sm">
+                    <li><span class="font-semibold text-indigo-600">Refleksi Diri:</span> Memberikan waktu bagi siswa untuk merefleksikan pengalaman mereka dan menilai kemajuan pribadi.</li>
+                    <li><span class="font-semibold text-indigo-600">Kerja Kelompok:</span> Siswa bekerja dalam kelompok untuk mencapai tujuan bersama, yang memupuk kerjasama dan komunikasi.</li>
+                    <li><span class="font-semibold text-indigo-600">Berbagi Pengalaman:</span> Siswa berbagi cerita atau pengalaman pribadi yang berkaitan dengan topik pembelajaran.</li>
+                  </ul>
+                </div>
+                <div>
+                  <span class="font-semibold text-gray-900 text-sm">2. Strategi Belajar:</span>
+                  <ul class="list-disc ml-6 text-sm">
+                    <li><span class="font-semibold text-indigo-600">Pembelajaran Berbasis Pengalaman:</span> Mengajak siswa untuk belajar melalui pengalaman langsung atau kegiatan praktis.</li>
+                    <li><span class="font-semibold text-indigo-600">Ceramah dan Diskusi:</span> Menyediakan waktu untuk ceramah atau diskusi mengenai topik-topik emosional atau sosial yang berkaitan dengan pembelajaran.</li>
+                    <li><span class="font-semibold text-indigo-600">Motivasi dan Penghargaan:</span> Memberikan penghargaan atau penguatan positif untuk meningkatkan motivasi dan keterlibatan siswa.</li>
+                  </ul>
+                </div>
+                <div>
+                  <span class="font-semibold text-gray-900 text-sm">3. Latihan:</span>
+                  <ul class="list-disc ml-6 text-sm">
+                    <li><span class="font-semibold text-indigo-600">Diskusi Kelas:</span> Siswa membahas materi dalam kelompok atau kelas besar untuk menggali pemahaman dan keterlibatan emosional.</li>
+                    <li><span class="font-semibold text-indigo-600">Refleksi Mandiri:</span> Siswa menulis jurnal pribadi atau esai reflektif mengenai pengalaman belajar mereka.</li>
+                    <li><span class="font-semibold text-indigo-600">Proyek Sosial:</span> Menyusun proyek yang mengajak siswa untuk membantu komunitas atau memberikan dampak sosial yang positif.</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      {% else %}
+        <div class="overflow-hidden bg-white">
+                <div class="mx-auto max-w-7xl px-6 lg:px-8">
+                    <div class="mx-auto grid max-w-2xl grid-cols-1 gap-x-8 gap-y-16 sm:gap-y-20 lg:mx-0 lg:max-w-none lg:grid-cols-2">
+                        <!-- Kolom kiri (teks) -->
+                        <div class="lg:pt-4 lg:pr-8">
+                            <div class="lg:max-w-lg">
+                              <div class="grid grid-cols-1 sm:grid-cols-3 gap-x-8 gap-y-6 mb-6" style="color: #de3b93;">
+                                <!-- keluarkan nama, kelas, dan asal sekolah -->
+                                <div class="col-span-2 flex flex-col gap-y-2">
+                                    <div class="flex items-center">
+                                        <h3 class="text-xl font-semibold w-32">Nama Siswa</h3>
+                                        <h3 class="text-xl font-semibold ml-2">:</h3>
+                                        <h3 class="text-xl font-semibold ml-4 whitespace-nowrap">{{ data_siswa.Nama }}</h3>
+                                    </div>
+                                    <div class="flex items-center">
+                                        <h3 class="text-xl font-semibold w-32">Kelas</h3>
+                                        <h3 class="text-xl font-semibold ml-2">:</h3>
+                                        <h3 class="text-xl font-semibold ml-4 whitespace-nowrap">{{ data_siswa.Kelas }}</h3>
+                                    </div>
+                                    <div class="flex items-center">
+                                        <h3 class="text-xl font-semibold w-32">Asal Sekolah</h3>
+                                        <h3 class="text-xl font-semibold ml-2">:</h3>
+                                        <h3 class="text-xl font-semibold ml-4 whitespace-nowrap">{{ data_siswa.asalSekolah }}</h3>
+                                    </div>
+                                </div>
+                              </div>
+                                <h2 class="text-base/7 font-semibold text-indigo-600">Hasil prediksi kemampuan siswa adalah : PSIKOMOTORIK</h2>
+                                <p class="mt-2 text-4xl font-semibold tracking-tight text-pretty text-gray-900 sm:text-5xl">SARAN UNTUK PSIKOMOTORIK</p>
+                                <p class="mt-6 text-lg/8 text-gray-600">Berikut adalah beberapa metode pengajaran, strategi belajar, dan latihan yang dapat digunakan untuk meningkatkan kemampuan psikomotorik siswa:</p>
+                                <dl class="mt-10 max-w-xl space-y-8 text-base/7 text-gray-600 lg:max-w-none">
+                                    <!-- Metode Pengajaran -->
+                                    <div class="relative pl-9">
+                                        <dt class="inline font-semibold text-gray-900">
+                                            <svg class="absolute top-1 left-1 size-5 text-indigo-600" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" data-slot="icon">
+                                                <path fill-rule="evenodd" d="M5.5 17a4.5 4.5 0 0 1-1.44-8.765 4.5 4.5 0 0 1 8.302-3.046 3.5 3.5 0 0 1 4.504 4.272A4 4 0 0 1 15 17H5.5Zm3.75-2.75a.75.75 0 0 0 1.5 0V9.66l1.95 2.1a.75.75 0 1 0 1.1-1.02l-3.25-3.5a.75.75 0 0 0-1.1 0l-3.25 3.5a.75.75 0 1 0 1.1 1.02l1.95-2.1v4.59Z" clip-rule="evenodd" />
+                                            </svg>
+                                            1. Metode Pengajaran:
+                                        </dt>
+                                        <dd class="inline">
+                                            <ul class="list-disc">
+                                                <li><span class="font-semibold text-indigo-600">Demonstrasi Langsung:</span> Guru menunjukkan langkah-langkah atau teknik yang harus dipraktikkan siswa (misalnya, dalam keterampilan fisik atau teknis).</li>
+                                                <li><span class="font-semibold text-indigo-600">Pembelajaran Praktik:</span> Memberikan kesempatan bagi siswa untuk mempraktikkan keterampilan yang telah diajarkan, seperti dalam kegiatan laboratorium atau olahraga.</li>
+                                                <li><span class="font-semibold text-indigo-600">Bimbingan Langsung:</span> Guru memberikan umpan balik langsung saat siswa berlatih, memastikan keterampilan dilakukan dengan benar.</li>
+                                            </ul>
+                                        </dd>
+                                    </div>
+
+                                    <!-- Strategi Belajar -->
+                                    <div class="relative pl-9">
+                                        <dt class="inline font-semibold text-gray-900">
+                                            <svg class="absolute top-1 left-1 size-5 text-indigo-600" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" data-slot="icon">
+                                                <path fill-rule="evenodd" d="M10 1a4.5 4.5 0 0 0-4.5 4.5V9H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2h-.5V5.5A4.5 4.5 0 0 0 10 1Zm3 8V5.5a3 3 0 1 0-6 0V9h6Z" clip-rule="evenodd" />
+                                            </svg>
+                                            2. Strategi Belajar:
+                                        </dt>
+                                        <dd class="inline">
+                                            <ul class="list-disc">
+                                                <li><span class="font-semibold text-indigo-600">Praktik Mandiri:</span> Siswa melatih keterampilan yang diajarkan secara mandiri, misalnya dengan latihan repetitif atau percakapan bahasa.</li>
+                                                <li><span class="font-semibold text-indigo-600">Observasi dan Tiruan:</span> Siswa mengamati demonstrasi oleh guru atau teman dan kemudian mencoba menirukan langkah-langkahnya.</li>
+                                                <li><span class="font-semibold text-indigo-600">Pembelajaran Kolaboratif:</span> Belajar dengan teman untuk saling memberikan umpan balik dan dukungan dalam menguasai keterampilan praktis.</li>
+                                            </ul>
+                                        </dd>
+                                    </div>
+
+                                    <!-- Latihan -->
+                                    <div class="relative pl-9">
+                                        <dt class="inline font-semibold text-gray-900">
+                                            <svg class="absolute top-1 left-1 size-5 text-indigo-600" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" data-slot="icon">
+                                                <path d="M4.632 3.533A2 2 0 0 1 6.577 2h6.846a2 2 0 0 1 1.945 1.533l1.976 8.234A3.489 3.489 0 0 0 16 11.5H4c-.476 0-.93.095-1.344.267l1.976-8.234Z" />
+                                                <path fill-rule="evenodd" d="M4 13a2 2 0 1 0 0 4h12a2 2 0 1 0 0-4H4Zm11.24 2a.75.75 0 0 1 .75-.75H16a.75.75 0 0 1 .75.75v.01a.75.75 0 0 1-.75.75h-.01a.75.75 0 0 1-.75-.75V15Zm-2.25-.75a.75.75 0 0 0-.75.75v.01c0 .414.336.75.75.75H13a.75.75 0 0 0 .75-.75V15a.75.75 0 0 0-.75-.75h-.01Z" clip-rule="evenodd" />
+                                            </svg>
+                                            3. Latihan:
+                                        </dt>
+                                        <dd class="inline">
+                                            <ul class="list-disc">
+                                                <li><span class="font-semibold text-indigo-600">Latihan Berulang:</span> Melakukan latihan berulang untuk menguasai keterampilan motorik tertentu, seperti olahraga atau seni.</li>
+                                                <li><span class="font-semibold text-indigo-600">Simulasi Tugas:</span> Menghadapi tugas praktis yang mirip dengan situasi nyata untuk mempraktikkan keterampilan motorik yang relevan (misalnya, percakapan dalam bahasa asing, eksperimen di laboratorium, atau tugas proyek praktik seperti membuat produk seni yang dinilai dari proses maupun hasilnya).</li>
+                                                <li><span class="font-semibold text-indigo-600">Kegiatan Fisik:</span> Mengikuti latihan atau kegiatan fisik yang meningkatkan keterampilan tubuh dan koordinasi, seperti latihan olahraga atau teknik seni bela diri.</li>
+                                            </ul>
+                                        </dd>
+                                    </div>
+                                </dl>
+                            </div>
+                        </div>
+
+                        <!-- Kolom kanan (gambar) -->
+                        <div class="flex flex-col items-center space-y-8">
+                            <!-- Gambar 1 -->
+                            <img class="mx-auto mt-2" src="{{ url_for('static', filename='30. visualisasi_nilai_bakat.png') }}">
+                            
+                            <!-- Gambar 2 -->
+                            <img src="/static/images/psikomotorik 2.jpeg" alt="Product screenshot" class="w-full max-w-none rounded-xl shadow-xl ring-1 ring-gray-400/10 transition-transform duration-300 ease-in-out transform hover:scale-105" width="608" height="361">
+                            
+                            <!-- Gambar 3 -->
+                            <img src="/static/images/psikomotorik 3.jpeg" alt="Product screenshot" class="w-full max-w-none rounded-xl shadow-xl ring-1 ring-gray-400/10 transition-transform duration-300 ease-in-out transform hover:scale-105" width="608" height="361">
+                        </div>
+                    </div>
+                </div>
+
+            <!-- KHUSUS PRINTOUT PSIKOMOTORIK -->
+            <div id="printOnlyContent-psikomotorik" class="hidden print:block print:w-full print:p-6 print:text-justify">
+              <div class="pt-3">
+                <h1 class="text-3xl font-semibold mb-2 text-gray-800 text-center">Hasil Prediksi</h1>
+                <h1 class="text-4xl text-blue-800 text-center"><strong>{{ hasil_prediksi.predicted_category if hasil_prediksi.predicted_category is not none else "N/A" }}</strong></h1>
+
+                <!-- Visualisasi Prediksi -->
+                <div class="text-center mt-6 h-full pl-7 pt-8">
+                  <h3 class="text-xl font-semibold text-purple-600">Probabilitas Kemampuan Belajar:</h3>
+                  <img class="mx-auto mt-2" src="{{ url_for('static', filename='22. hasil_prediksi.png') }}">
+                </div>
+              </div>
+
+              <div class="mx-auto max-w-7xl px-6 lg:px-8 flex items-start gap-x-8">
+                  <div class="lg:pt-4 lg:pr-8 w-1/2">
+                    <div class="lg:max-w-lg grid grid-cols-1 gap-y-2 pl-3 py-10" style="color: #de3b93;">
+                      <div class="flex whitespace-nowrap">
+                        <h1 class="font-semibold w-1/3">Nama Siswa</h1>
+                        <h1 class="font-semibold w-1/12 text-right">:&nbsp;</h1>
+                        <h1 class="font-semibold w-auto">{{ data_siswa.Nama }}</h1>
+                      </div>
+                      <div class="flex whitespace-nowrap">
+                        <h1 class="font-semibold w-1/3">Kelas</h1>
+                        <h1 class="font-semibold w-1/12 text-right">:&nbsp;</h1>
+                        <h1 class="font-semibold w-auto">{{ data_siswa.Kelas }}</h1>
+                      </div>
+                      <div class="flex whitespace-nowrap">
+                        <h1 class="font-semibold w-1/3">Asal Sekolah</h1>
+                        <h1 class="font-semibold w-1/12 text-right">:&nbsp;</h1>
+                        <h1 class="font-semibold w-auto">{{ data_siswa.asalSekolah }}</h1>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="flex flex-col items-center space-y-8 w-1/2">
+                      <img class="mx-auto mt-2 max-w-full h-auto" style="max-height: 400px;" src="{{ url_for('static', filename='30. visualisasi_nilai_bakat.png') }}">
+                  </div>
+              </div>
+
+              <div class="pl-12 pr-10">
+                  <p class="mt-2 text-2xl font-semibold tracking-tight text-pretty text-gray-900">SARAN UNTUK PSIKOMOTORIK</p>
+                  <p class="text-sm text-gray-600 text-justify pt-3">Berikut adalah beberapa metode pengajaran, strategi belajar, dan latihan yang dapat digunakan untuk meningkatkan kemampuan kognitif siswa:</p>
+                <div>
+                  <span class="font-semibold text-gray-900 text-sm">1. Metode Pengajaran:</span>
+                  <ul class="list-disc ml-6 text-sm">
+                    <li><span class="font-semibold text-indigo-600">Demonstrasi Langsung:</span> Guru menunjukkan langkah-langkah atau teknik yang harus dipraktikkan siswa (misalnya, dalam keterampilan fisik atau teknis).</li>
+                    <li><span class="font-semibold text-indigo-600">Pembelajaran Praktik:</span> Memberikan kesempatan bagi siswa untuk mempraktikkan keterampilan yang telah diajarkan, seperti dalam kegiatan laboratorium atau olahraga.</li>
+                    <li><span class="font-semibold text-indigo-600">Bimbingan Langsung:</span> Guru memberikan umpan balik langsung saat siswa berlatih, memastikan keterampilan dilakukan dengan benar.</li>
+                  </ul>
+                </div>
+                <div>
+                  <span class="font-semibold text-gray-900 text-sm">2. Strategi Belajar:</span>
+                  <ul class="list-disc ml-6 text-sm">
+                    <li><span class="font-semibold text-indigo-600">Praktik Mandiri:</span> Siswa melatih keterampilan yang diajarkan secara mandiri, misalnya dengan latihan repetitif atau percakapan bahasa.</li>
+                    <li><span class="font-semibold text-indigo-600">Observasi dan Tiruan:</span> Siswa mengamati demonstrasi oleh guru atau teman dan kemudian mencoba menirukan langkah-langkahnya.</li>
+                    <li><span class="font-semibold text-indigo-600">Pembelajaran Kolaboratif:</span> Belajar dengan teman untuk saling memberikan umpan balik dan dukungan dalam menguasai keterampilan praktis.</li>
+                  </ul>
+                </div>
+                <div>
+                  <span class="font-semibold text-gray-900 text-sm">3. Latihan:</span>
+                  <ul class="list-disc ml-6 text-sm">
+                    <li><span class="font-semibold text-indigo-600">Latihan Berulang:</span> Melakukan latihan berulang untuk menguasai keterampilan motorik tertentu, seperti olahraga atau seni.</li>
+                    <li><span class="font-semibold text-indigo-600">Simulasi Tugas:</span> Menghadapi tugas praktis yang mirip dengan situasi nyata untuk mempraktikkan keterampilan motorik yang relevan (misalnya, percakapan dalam bahasa asing, eksperimen di laboratorium, atau tugas proyek praktik seperti membuat produk seni yang dinilai dari proses maupun hasilnya).</li>
+                    <li><span class="font-semibold text-indigo-600">Kegiatan Fisik:</span> Mengikuti latihan atau kegiatan fisik yang meningkatkan keterampilan tubuh dan koordinasi, seperti latihan olahraga atau teknik seni bela diri.</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      {% endif %}
+      <!-- tombol cetak dengan gaya tailwind -->
+
+    </div>
+    <div class="text-center mb-6 pt-7">
+      <button class="px-6 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition" onclick="generatePDF()" >Cetak Hasil Prediksi</button> 
+    </div>
+    
+    <div class="px-35 pt-5">
+      <div>
+        <table class="table-auto border border-purple-400 w-full text-center">
+          <tr>
+            <td colspan="4" class="border border-purple-400 p-2 bg-purple-100 font-bold">
+              Data Input
+            </td>
+          </tr>
+          <tr class=font-bold>
+            <td class="border border-purple-400 p-2">Thinking</td>
+            <td class="border border-purple-400 p-2">Striving</td>
+            <td class="border border-purple-400 p-2">Relating</td>
+            <td class="border border-purple-400 p-2">Influencing</td>
+          </tr>
+          <tr>
+            <td class="border border-purple-400 p-2">{{ hasil_prediksi.input_data.Thinking }}</td>
+            <td class="border border-purple-400 p-2">{{ hasil_prediksi.input_data.Striving }}</td>
+            <td class="border border-purple-400 p-2">{{ hasil_prediksi.input_data.Relating }}</td>
+            <td class="border border-purple-400 p-2">{{ hasil_prediksi.input_data.Influencing }}</td>
+          </tr>
+        </table>
+      </div>
+
+      <div class="pt-12">
+        <table class="table-auto border border-purple-400 w-full text-center">
+          <tr>
+            <td colspan="4" class="border border-purple-400 p-2 bg-purple-100 font-bold">
+              Hasil Skor Komposit
+            </td>
+          </tr>
+          <tr class=font-bold>
+            <td class="border border-purple-400 p-2">Thinking</td>
+            <td class="border border-purple-400 p-2">Striving</td>
+            <td class="border border-purple-400 p-2">Relating</td>
+            <td class="border border-purple-400 p-2">Influencing</td>
+          </tr>
+          <tr>
+            <td class="border border-purple-400 p-2">{{ hasil_prediksi.hasil_komposit.Thinking | round(2) }}</td>
+            <td class="border border-purple-400 p-2">{{ hasil_prediksi.hasil_komposit.Striving | round(2) }}</td>
+            <td class="border border-purple-400 p-2">{{ hasil_prediksi.hasil_komposit.Relating | round(2) }}</td>
+            <td class="border border-purple-400 p-2">{{ hasil_prediksi.hasil_komposit.Influencing | round(2) }}</td>
+          </tr>
+        </table>
+      </div>
+
+      <div class="pt-12">
+        <table class="table-auto border border-purple-400 w-full text-center">
+          <tr>
+            <td colspan="4" class="border border-purple-400 p-2 bg-purple-100 font-bold">
+              Normalisasi Data
+            </td>
+          </tr>
+          <tr>
+            <td class="border border-purple-400 p-2">
+              {% for row in hasil_prediksi.normalized_data %}
+                [{{ row|join(", ") }}]
+              {% endfor %}
+            </td>
+          </tr>
+        </table>
+      </div>
+
+      <div class="pt-12">
+        <table class="table-fixed border border-purple-400 w-full text-center">
+          <colgroup>
+            <col class="w-1/2" />
+            <col class="w-1/2" />
+          </colgroup>
+          <tr class="font-bold">
+            <td class="border border-purple-400 p-2 bg-purple-100 font-bold">Output Softmax</td>
+            <td class="border border-purple-400 p-2 bg-purple-100 font-bold">Probabilitas Kelas</td>
+          </tr>
+          <tr>
+            <td class="border border-purple-400 p-2">
+              {{ output_softmax|join(", ") if output_softmax is not none else "N/A" }}
+            </td>
+            <td class="border border-purple-400 p-2">
+              {% if probabilities %}
+                {% for category, probability in probabilities.items() %}
+                  <p>{{ category }}: {{ probability }}%</p>
+                {% endfor %}
+              {% else %}
+                <p>No probabilities data available.</p>
+              {% endif %}
+            </td>
+          </tr>
+        </table>
+      </div>
+
+      <div class="pt-12">
+        <table class="table-fixed border border-purple-400 w-full text-center">
+          <colgroup>
+            <col class="w-1/2" />
+            <col class="w-1/2" />
+          </colgroup>
+          <tr>
+            <td colspan="2" class="border border-purple-400 p-2 bg-purple-100 font-bold">
+              Hasil Prediksi
+            </td>
+          </tr>
+          <tr class="font-bold">
+            <td class="border border-purple-400 p-2 bg-purple-100 font-bold">Class</td>
+            <td class="border border-purple-400 p-2 bg-purple-100 font-bold">Category</td>
+          </tr>
+          <tr>
+            <td class="border border-purple-400 p-2">
+              {{ hasil_prediksi.predicted_class if hasil_prediksi.predicted_class is not none else "N/A" }}
+            </td>
+            <td class="border border-purple-400 p-2">
+              {{ hasil_prediksi.predicted_category if hasil_prediksi.predicted_category is not none else "N/A" }}
+            </td>
+          </tr>
+        </table>
+      </div>
+    </div>
+
+    </div>
+    
+    
+      <!-- Visualisasi Firing Strength -->
+      <div class="text-center mt-6 h-full">
+        <h3 class="text-xl font-semibold text-purple-600">Visualisasi Firing Strength:</h3>
+        <img class="mx-auto mt-2" src="{{ url_for('static', filename='21. rule_strengths_plot.png') }}">
+      </div>
+      <!-- End of Visualisasi Prediksi   -->
+    
+    
+      
+
+    
+      
+    {% else %}
+      <div class="text-center text-red-500">
+        <p>Prediksi belum dilakukan, silahkan simpan nilai yang akan diprediksi dan tekan tombol prediksi.</p>
+      </div>
+
+    {% endif %} 
+
+    
+
+        
+      {% endif %}
+    </div>
+
+
+
+
+
+
+
+
+
+
+
+{% endblock %}
